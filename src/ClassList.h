@@ -1,0 +1,35 @@
+#ifndef CLASSLIST_H
+#define CLASSLIST_H
+
+#include <string>
+
+struct ClassNode {
+    int id;
+    std::string course;
+    std::string teacher;
+    std::string room;
+    std::string section;
+    ClassNode* next;
+};
+
+class ClassList {
+private:
+    ClassNode* head;
+    ClassNode* tail;
+    int count;
+
+public:
+    ClassList();
+    ~ClassList();
+
+    // copying a list would make two lists share nodes and double-delete them
+    ClassList(const ClassList&) = delete;
+    ClassList& operator=(const ClassList&) = delete;
+
+    bool insert(int id, const std::string& course, const std::string& teacher,
+                const std::string& room, const std::string& section);
+    void display() const;
+    int size() const;
+};
+
+#endif
