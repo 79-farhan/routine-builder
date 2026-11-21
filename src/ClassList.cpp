@@ -86,3 +86,33 @@ void ClassList::display() const {
 int ClassList::size() const {
     return count;
 }
+
+// O(n): must walk to find the node. Unlinking and deleting is O(1).
+// Returns false if no class has this id (including an empty list).
+bool ClassList::remove(int id) {
+    ClassNode* prev = nullptr;
+    ClassNode* cur = head;
+
+    while (cur != nullptr && cur->id != id) {
+        prev = cur;
+        cur = cur->next;
+    }
+
+    if (cur == nullptr) {        // not found
+        return false;
+    }
+
+    if (prev == nullptr) {       // removing the head
+        head = cur->next;
+    } else {                     // removing a middle or tail node
+        prev->next = cur->next;
+    }
+
+    if (cur == tail) {           // removed the last node: tail steps back
+        tail = prev;
+    }
+
+    delete cur;
+    count--;
+    return true;
+}

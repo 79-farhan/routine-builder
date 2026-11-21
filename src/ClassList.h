@@ -30,6 +30,7 @@ public:
 
     bool insert(int id, const std::string& course, const std::string& teacher,
                 const std::string& room, const std::string& section);
+    bool remove(int id);
     ClassNode* search(int id) const;
     void display() const;
     int size() const;

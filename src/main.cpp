@@ -4,42 +4,53 @@
 int main() {
     ClassList list;
 
-    std::cout << "Test 1: search on empty list\n";
-    if (list.search(1) == nullptr) {
+    list.insert(1, "C1", "T1", "R1", "E");
+    list.insert(2, "C2", "T2", "R2", "E");
+    list.insert(3, "C3", "T3", "R3", "E");
+    list.insert(4, "C4", "T4", "R4", "E");
+    list.insert(5, "C5", "T5", "R5", "E");
+
+    std::cout << "Test 1: remove a middle node (id 3)\n";
+    list.remove(3);
+    list.display();
+    std::cout << "  size " << list.size() << "\n";
+
+    std::cout << "\nTest 2: remove the head (id 1)\n";
+    list.remove(1);
+    list.display();
+    std::cout << "  size " << list.size() << "\n";
+
+    std::cout << "\nTest 3: remove the tail (id 5)\n";
+    list.remove(5);
+    list.display();
+    std::cout << "  size " << list.size() << "\n";
+
+    std::cout << "\nTest 4: remove a missing id (99)\n";
+    if (!list.remove(99)) {
         std::cout << "  not found (correct)\n";
     }
 
-    list.insert(1, "CSE2103", "Mr. A", "R101", "E");
-    list.insert(2, "MAT2101", "Ms. B", "R102", "E");
-    list.insert(3, "PHY2101", "Mr. C", "R101", "F");
-
-    std::cout << "\nTest 2: list after 3 inserts (size " << list.size() << ")\n";
+    std::cout << "\nTest 5: insert after tail removal (tail must be correct)\n";
+    list.insert(6, "C6", "T6", "R6", "E");
     list.display();
+    std::cout << "  size " << list.size() << "\n";
 
-    std::cout << "\nTest 3: duplicate id\n";
-    if (!list.insert(1, "CHE2101", "Mr. D", "R103", "E")) {
-        std::cout << "  rejected (correct)\n";
+    std::cout << "\nTest 6: remove everything\n";
+    list.remove(2);
+    list.remove(4);
+    list.remove(6);
+    list.display();
+    std::cout << "  size " << list.size() << "\n";
+
+    std::cout << "\nTest 7: remove from an empty list\n";
+    if (!list.remove(1)) {
+        std::cout << "  not found (correct)\n";
     }
 
-    std::cout << "\nTest 4: same course in same section\n";
-    if (!list.insert(9, "CSE2103", "Mr. Z", "R104", "E")) {
-        std::cout << "  rejected (correct)\n";
-    }
+    std::cout << "\nTest 8: insert after the list was emptied\n";
+    list.insert(7, "C7", "T7", "R7", "E");
+    list.display();
+    std::cout << "  size " << list.size() << "\n";
 
-    std::cout << "\nTest 5: same course in a different section\n";
-    if (list.insert(4, "CSE2103", "Mr. A", "R101", "F")) {
-        std::cout << "  accepted (correct)\n";
-    }
-
-    std::cout << "\nTest 6: search existing and missing\n";
-    ClassNode* found = list.search(2);
-    if (found != nullptr) {
-        std::cout << "  id 2 found: " << found->course << "\n";
-    }
-    if (list.search(99) == nullptr) {
-        std::cout << "  id 99 not found (correct)\n";
-    }
-
-    std::cout << "\nFinal size: " << list.size() << "\n";
     return 0;
 }
