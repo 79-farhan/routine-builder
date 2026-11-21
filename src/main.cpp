@@ -1,56 +1,61 @@
 #include <iostream>
-#include "ClassQueue.h"
+#include "UndoStack.h"
 
 int main() {
-    ClassQueue q(5);
-    int x;
+    UndoStack st;
+    UndoAction a;
 
-    std::cout << "Test 1: dequeue and peek on an empty queue\n";
-    if (!q.dequeue(x)) {
+    std::cout << "Test 1: pop and peek on an empty stack\n";
+    if (!st.pop(a)) {
         std::cout << "  underflow caught (correct)\n";
     }
-    if (!q.peek(x)) {
+    if (!st.peek(a)) {
         std::cout << "  peek on empty caught (correct)\n";
     }
 
-    std::cout << "\nTest 2: enqueue 1 to 5 (fills the queue)\n";
-    for (int i = 1; i <= 5; i++) {
-        q.enqueue(i);
+    std::cout << "\nTest 2: push three actions\n";
+    st.push(makePlaceAction(1, 0, 0));
+    st.push(makePlaceAction(2, 0, 1));
+    st.push(makeMoveAction(1, 0, 0, 2, 3));
+    st.display();
+    std::cout << "  size " << st.size() << "\n";
+
+    std::cout << "\nTest 3: pop gives the newest action first (LIFO)\n";
+    if (st.pop(a)) {
+        std::cout << "  popped " << (a.type == ACTION_MOVE ? "MOVE" : "PLACE")
+                  << " class " << a.classId << "\n";
+        std::cout << "  restore to (day " << a.fromDay << ", slot " << a.fromSlot
+                  << "), currently at (day " << a.day << ", slot " << a.slot << ")\n";
     }
-    q.display();
-    std::cout << "  size " << q.size() << ", full: " << (q.isFull() ? "yes" : "no") << "\n";
 
-    std::cout << "\nTest 3: enqueue when full\n";
-    if (!q.enqueue(99)) {
-        std::cout << "  overflow caught (correct)\n";
+    std::cout << "\nTest 4: peek does not remove\n";
+    if (st.peek(a)) {
+        std::cout << "  top is " << (a.type == ACTION_MOVE ? "MOVE" : "PLACE")
+                  << " class " << a.classId << ", size still " << st.size() << "\n";
     }
 
-    std::cout << "\nTest 4: FIFO order, dequeue two\n";
-    q.dequeue(x);
-    std::cout << "  got " << x << "\n";
-    q.dequeue(x);
-    std::cout << "  got " << x << "\n";
-    q.display();
-
-    std::cout << "\nTest 5: wraparound, enqueue 6 and 7\n";
-    q.enqueue(6);
-    q.enqueue(7);
-    q.display();
-    std::cout << "  size " << q.size() << "\n";
-
-    std::cout << "\nTest 6: peek does not remove\n";
-    q.peek(x);
-    std::cout << "  front is " << x << ", size still " << q.size() << "\n";
-
-    std::cout << "\nTest 7: empty it completely\n";
-    while (q.dequeue(x)) {
-        std::cout << "  got " << x << "\n";
+    std::cout << "\nTest 5: pop everything\n";
+    while (st.pop(a)) {
+        std::cout << "  popped " << (a.type == ACTION_MOVE ? "MOVE" : "PLACE")
+                  << " class " << a.classId << "\n";
     }
-    std::cout << "  empty: " << (q.isEmpty() ? "yes" : "no") << "\n";
+    std::cout << "  empty: " << (st.isEmpty() ? "yes" : "no") << "\n";
 
-    std::cout << "\nTest 8: reuse after emptying\n";
-    q.enqueue(42);
-    q.display();
+    std::cout << "\nTest 6: push after the stack was emptied\n";
+    st.push(makePlaceAction(7, 4, 5));
+    st.display();
+
+    std::cout << "\nTest 7: 1000 pushes on a fresh stack (no overflow)\n";
+    UndoStack big;
+    for (int i = 0; i < 1000; i++) {
+        big.push(makePlaceAction(i, 0, 0));
+    }
+    std::cout << "  size after 1000 pushes: " << big.size() << "\n";
+    int n = 0;
+    while (big.pop(a)) {
+        n++;
+    }
+    std::cout << "  popped " << n << " actions, empty: " << (big.isEmpty() ? "yes" : "no") << "\n";
 
     return 0;
 }
