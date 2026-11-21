@@ -18,6 +18,8 @@ private:
     ClassNode* tail;
     int count;
 
+    bool isDuplicate(int id, const std::string& course, const std::string& section) const;
+
 public:
     ClassList();
     ~ClassList();
@@ -28,6 +30,7 @@ public:
 
     bool insert(int id, const std::string& course, const std::string& teacher,
                 const std::string& room, const std::string& section);
+    ClassNode* search(int id) const;
     void display() const;
     int size() const;
 };

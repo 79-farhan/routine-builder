@@ -12,9 +12,31 @@ ClassList::~ClassList() {
     }
 }
 
-// O(1): the tail pointer means we never walk the list to add at the end
+// O(n): walks the list once. Duplicate means same id,
+// or same course already added for the same section.
+bool ClassList::isDuplicate(int id, const std::string& course,
+                            const std::string& section) const {
+    ClassNode* cur = head;
+    while (cur != nullptr) {
+        if (cur->id == id) {
+            return true;
+        }
+        if (cur->course == course && cur->section == section) {
+            return true;
+        }
+        cur = cur->next;
+    }
+    return false;
+}
+
+// O(n) because of the duplicate check, then O(1) to attach at the tail.
+// Returns false and changes nothing if the class is a duplicate.
 bool ClassList::insert(int id, const std::string& course, const std::string& teacher,
                        const std::string& room, const std::string& section) {
+    if (isDuplicate(id, course, section)) {
+        return false;
+    }
+
     ClassNode* node = new ClassNode;
     node->id = id;
     node->course = course;
@@ -32,6 +54,19 @@ bool ClassList::insert(int id, const std::string& course, const std::string& tea
     }
     count++;
     return true;
+}
+
+// O(n): in the worst case the class is last or missing.
+// Returns nullptr when not found (also true for an empty list).
+ClassNode* ClassList::search(int id) const {
+    ClassNode* cur = head;
+    while (cur != nullptr) {
+        if (cur->id == id) {
+            return cur;
+        }
+        cur = cur->next;
+    }
+    return nullptr;
 }
 
 // O(n): visits every node once
