@@ -116,3 +116,35 @@ bool ClassList::remove(int id) {
     count--;
     return true;
 }
+
+// O(n): true if some OTHER class (id != skipId) already has this course in this section.
+bool ClassList::courseSectionTaken(int skipId, const std::string& course,
+                                   const std::string& section) const {
+    ClassNode* cur = head;
+    while (cur != nullptr) {
+        if (cur->id != skipId && cur->course == course && cur->section == section) {
+            return true;
+        }
+        cur = cur->next;
+    }
+    return false;
+}
+
+// O(n): search is O(n), the duplicate check is O(n), the field changes are O(1).
+// Returns false if the id is missing or the new details would duplicate another
+// class. On failure the node is left exactly as it was.
+bool ClassList::update(int id, const std::string& course, const std::string& teacher,
+                       const std::string& room, const std::string& section) {
+    ClassNode* node = search(id);
+    if (node == nullptr) {
+        return false;
+    }
+    if (courseSectionTaken(id, course, section)) {
+        return false;
+    }
+    node->course = course;
+    node->teacher = teacher;
+    node->room = room;
+    node->section = section;
+    return true;
+}
