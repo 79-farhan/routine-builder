@@ -1,61 +1,59 @@
 #include <iostream>
-#include "UndoStack.h"
+#include <string>
+#include "Routine.h"
+
+void tryPlace(Routine& r, const ClassList& c, int id, int day, int slot) {
+    PlaceResult res = r.place(c, id, day, slot);
+    std::cout << "  class " << id << " at (day " << day << ", slot " << slot
+              << "): " << placeResultText(res) << "\n";
+}
 
 int main() {
-    UndoStack st;
-    UndoAction a;
+    ClassList classes;
+    classes.insert(1, "CSE2103", "T1", "R1", "E");
+    classes.insert(2, "MAT2101", "T2", "R2", "E");
+    classes.insert(3, "PHY2101", "T3", "R3", "F");
+    classes.insert(4, "CHE2101", "T4", "R4", "E");
 
-    std::cout << "Test 1: pop and peek on an empty stack\n";
-    if (!st.pop(a)) {
-        std::cout << "  underflow caught (correct)\n";
-    }
-    if (!st.peek(a)) {
-        std::cout << "  peek on empty caught (correct)\n";
+    Routine routine;
+
+    std::cout << "Test 1: display an empty routine\n";
+    routine.display(classes);
+
+    std::cout << "\nTest 2: place into empty slots (E and F can share a time)\n";
+    tryPlace(routine, classes, 1, 0, 0);
+    tryPlace(routine, classes, 2, 0, 1);
+    tryPlace(routine, classes, 3, 0, 0);
+
+    std::cout << "\nTest 3: slot already used by the same section\n";
+    tryPlace(routine, classes, 4, 0, 0);
+
+    std::cout << "\nTest 4: place the same class twice\n";
+    tryPlace(routine, classes, 1, 1, 2);
+
+    std::cout << "\nTest 5: class that does not exist\n";
+    tryPlace(routine, classes, 99, 0, 2);
+
+    std::cout << "\nTest 6: positions out of range\n";
+    tryPlace(routine, classes, 4, 7, 0);
+    tryPlace(routine, classes, 4, 0, -1);
+    tryPlace(routine, classes, 4, 0, 6);
+
+    std::cout << "\nTest 7: place class 4 in a free slot\n";
+    tryPlace(routine, classes, 4, 1, 0);
+
+    std::cout << "\nTest 8: more sections than the table can hold (max "
+              << MAX_SECTIONS << ")\n";
+    ClassList many;
+    Routine big;
+    for (int i = 0; i < MAX_SECTIONS + 1; i++) {
+        std::string sec(1, static_cast<char>('A' + i));
+        many.insert(i + 1, "X" + std::to_string(i), "T", "R", sec);
+        tryPlace(big, many, i + 1, 0, 0);
     }
 
-    std::cout << "\nTest 2: push three actions\n";
-    st.push(makePlaceAction(1, 0, 0));
-    st.push(makePlaceAction(2, 0, 1));
-    st.push(makeMoveAction(1, 0, 0, 2, 3));
-    st.display();
-    std::cout << "  size " << st.size() << "\n";
-
-    std::cout << "\nTest 3: pop gives the newest action first (LIFO)\n";
-    if (st.pop(a)) {
-        std::cout << "  popped " << (a.type == ACTION_MOVE ? "MOVE" : "PLACE")
-                  << " class " << a.classId << "\n";
-        std::cout << "  restore to (day " << a.fromDay << ", slot " << a.fromSlot
-                  << "), currently at (day " << a.day << ", slot " << a.slot << ")\n";
-    }
-
-    std::cout << "\nTest 4: peek does not remove\n";
-    if (st.peek(a)) {
-        std::cout << "  top is " << (a.type == ACTION_MOVE ? "MOVE" : "PLACE")
-                  << " class " << a.classId << ", size still " << st.size() << "\n";
-    }
-
-    std::cout << "\nTest 5: pop everything\n";
-    while (st.pop(a)) {
-        std::cout << "  popped " << (a.type == ACTION_MOVE ? "MOVE" : "PLACE")
-                  << " class " << a.classId << "\n";
-    }
-    std::cout << "  empty: " << (st.isEmpty() ? "yes" : "no") << "\n";
-
-    std::cout << "\nTest 6: push after the stack was emptied\n";
-    st.push(makePlaceAction(7, 4, 5));
-    st.display();
-
-    std::cout << "\nTest 7: 1000 pushes on a fresh stack (no overflow)\n";
-    UndoStack big;
-    for (int i = 0; i < 1000; i++) {
-        big.push(makePlaceAction(i, 0, 0));
-    }
-    std::cout << "  size after 1000 pushes: " << big.size() << "\n";
-    int n = 0;
-    while (big.pop(a)) {
-        n++;
-    }
-    std::cout << "  popped " << n << " actions, empty: " << (big.isEmpty() ? "yes" : "no") << "\n";
+    std::cout << "\nTest 9: display the routine\n";
+    routine.display(classes);
 
     return 0;
 }
