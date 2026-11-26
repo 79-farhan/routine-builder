@@ -73,3 +73,35 @@ void ClassQueue::display() const {
     }
     std::cout << "\n";
 }
+
+// O(1): steps front back one place (wrapping below index 0) and stores the id
+// there. Used by undo to put a class back exactly where it was taken from.
+// Returns false on overflow (queue full) and changes nothing.
+bool ClassQueue::pushFront(int classId) {
+    if (isFull()) {
+        return false;
+    }
+    front = (front - 1 + capacity) % capacity;
+    data[front] = classId;
+    count++;
+    return true;
+}
+
+// O(n): takes every item out once and puts back all except the first match,
+// so the order of the others is unchanged. Returns false if the id is not in
+// the queue (also true for an empty queue). This is a maintenance operation
+// for deleting a waiting class, not part of normal FIFO use.
+bool ClassQueue::removeValue(int classId) {
+    bool found = false;
+    int n = count;
+    for (int i = 0; i < n; i++) {
+        int x = 0;
+        dequeue(x);
+        if (!found && x == classId) {
+            found = true;
+        } else {
+            enqueue(x);
+        }
+    }
+    return found;
+}

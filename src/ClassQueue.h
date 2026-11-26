@@ -19,7 +19,9 @@ public:
     ClassQueue& operator=(const ClassQueue&) = delete;
 
     bool enqueue(int classId);
+    bool pushFront(int classId);
     bool dequeue(int& classId);
+    bool removeValue(int classId);
     bool peek(int& classId) const;
     bool isEmpty() const;
     bool isFull() const;
