@@ -15,6 +15,8 @@ enum PlaceResult {
     PLACE_CLASS_NOT_FOUND,
     PLACE_ALREADY_PLACED,
     PLACE_SECTION_BUSY,
+    PLACE_TEACHER_CLASH,
+    PLACE_ROOM_CLASH,
     PLACE_NO_SECTION_SPACE
 };
 
@@ -30,6 +32,8 @@ private:
 
     int findSection(const std::string& name) const;
     int addSection(const std::string& name);
+    PlaceResult checkResourceClash(const ClassList& classes, const ClassNode* cls,
+                                   int day, int slot) const;
 
 public:
     Routine();

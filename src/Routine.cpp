@@ -4,12 +4,14 @@
 
 const char* placeResultText(PlaceResult r) {
     switch (r) {
-        case PLACE_OK:              return "placed";
-        case PLACE_BAD_POSITION:    return "rejected: day or slot out of range";
-        case PLACE_CLASS_NOT_FOUND: return "rejected: class not found";
-        case PLACE_ALREADY_PLACED:  return "rejected: class is already placed";
-        case PLACE_SECTION_BUSY:    return "rejected: section already has a class in this slot";
-        case PLACE_NO_SECTION_SPACE:return "rejected: no room for another section";
+        case PLACE_OK:               return "placed";
+        case PLACE_BAD_POSITION:     return "rejected: day or slot out of range";
+        case PLACE_CLASS_NOT_FOUND:  return "rejected: class not found";
+        case PLACE_ALREADY_PLACED:   return "rejected: class is already placed";
+        case PLACE_SECTION_BUSY:     return "rejected: section already has a class in this slot";
+        case PLACE_TEACHER_CLASH:    return "rejected: teacher is busy in another section at this time";
+        case PLACE_ROOM_CLASH:       return "rejected: room is taken by another section at this time";
+        case PLACE_NO_SECTION_SPACE: return "rejected: no room for another section";
     }
     return "unknown result";
 }
@@ -59,9 +61,34 @@ bool Routine::isPlaced(int classId) const {
     return false;
 }
 
-// O(n): the class lookup in the linked list dominates. Everything else is
-// constant work. Checks run cheapest first and nothing is written until
-// every check has passed.
+// O(S * n): looks at the same (day, slot) cell in every section, and each
+// filled cell costs one list lookup. A teacher clash is returned straight
+// away, so it always wins over a room clash.
+PlaceResult Routine::checkResourceClash(const ClassList& classes, const ClassNode* cls,
+                                        int day, int slot) const {
+    bool roomClash = false;
+    for (int s = 0; s < sectionCount; s++) {
+        int otherId = grid[s][day][slot];
+        if (otherId == EMPTY_SLOT) {
+            continue;
+        }
+        ClassNode* other = classes.search(otherId);
+        if (other == nullptr) {
+            continue;
+        }
+        if (other->teacher == cls->teacher) {
+            return PLACE_TEACHER_CLASH;
+        }
+        if (other->room == cls->room) {
+            roomClash = true;
+        }
+    }
+    return roomClash ? PLACE_ROOM_CLASH : PLACE_OK;
+}
+
+// O(n) for the class lookup, plus O(S * n) for the clash check, so O(S * n)
+// overall, and S is at most 6. Checks run cheapest first, and nothing is
+// written (not even a new section) until every check has passed.
 PlaceResult Routine::place(const ClassList& classes, int classId, int day, int slot) {
     if (day < 0 || day >= DAYS || slot < 0 || slot >= SLOTS) {
         return PLACE_BAD_POSITION;
@@ -77,17 +104,22 @@ PlaceResult Routine::place(const ClassList& classes, int classId, int day, int s
     }
 
     int s = findSection(cls->section);
-    if (s == -1) {
-        s = addSection(cls->section);
-        if (s == -1) {
-            return PLACE_NO_SECTION_SPACE;
-        }
+    if (s == -1 && sectionCount >= MAX_SECTIONS) {
+        return PLACE_NO_SECTION_SPACE;
     }
 
-    if (grid[s][day][slot] != EMPTY_SLOT) {
+    if (s != -1 && grid[s][day][slot] != EMPTY_SLOT) {
         return PLACE_SECTION_BUSY;
     }
 
+    PlaceResult clash = checkResourceClash(classes, cls, day, slot);
+    if (clash != PLACE_OK) {
+        return clash;
+    }
+
+    if (s == -1) {
+        s = addSection(cls->section);
+    }
     grid[s][day][slot] = classId;
     return PLACE_OK;
 }
