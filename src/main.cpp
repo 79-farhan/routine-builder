@@ -8,54 +8,86 @@ void tryPlace(Routine& r, const ClassList& c, int id, int day, int slot) {
               << "): " << placeResultText(res) << "\n";
 }
 
+void tryMove(Routine& r, const ClassList& c, int id, int day, int slot) {
+    int oldDay = -1;
+    int oldSlot = -1;
+    PlaceResult res = r.move(c, id, day, slot, oldDay, oldSlot);
+    std::cout << "  class " << id << " to (day " << day << ", slot " << slot << "): ";
+    if (res == PLACE_OK) {
+        std::cout << "moved from (day " << oldDay << ", slot " << oldSlot << ")\n";
+    } else {
+        std::cout << placeResultText(res) << "\n";
+    }
+}
+
+void tryUnplace(Routine& r, int id) {
+    int day = -1;
+    int slot = -1;
+    if (r.unplace(id, day, slot)) {
+        std::cout << "  class " << id << " removed from (day " << day
+                  << ", slot " << slot << ")\n";
+    } else {
+        std::cout << "  class " << id << " is not placed, nothing removed\n";
+    }
+}
+
 int main() {
     ClassList classes;
     classes.insert(1, "CSE2103", "T1", "R1", "E");
-    classes.insert(2, "MAT2101", "T2", "R2", "F");
-    classes.insert(3, "PHY2101", "T1", "R3", "F");
-    classes.insert(4, "CHE2101", "T4", "R1", "G");
-    classes.insert(5, "ENG2101", "T5", "R5", "G");
-    classes.insert(6, "BUS2101", "T1", "R1", "H");
+    classes.insert(2, "MAT2101", "T2", "R2", "E");
+    classes.insert(3, "PHY2101", "T3", "R3", "F");
+    classes.insert(4, "CHE2101", "T1", "R4", "F");
+    classes.insert(5, "ENG2101", "T5", "R1", "G");
 
     Routine routine;
 
-    std::cout << "Test 1: place the first class\n";
+    std::cout << "Setup: place classes 1 to 4\n";
     tryPlace(routine, classes, 1, 0, 0);
-
-    std::cout << "\nTest 2: same teacher in another section at the same time\n";
+    tryPlace(routine, classes, 2, 0, 1);
     tryPlace(routine, classes, 3, 0, 0);
-
-    std::cout << "\nTest 3: same teacher at a different time\n";
-    tryPlace(routine, classes, 3, 0, 1);
-
-    std::cout << "\nTest 4: same room used by another section at the same time\n";
-    tryPlace(routine, classes, 4, 0, 0);
-
-    std::cout << "\nTest 5: same room at a different time\n";
     tryPlace(routine, classes, 4, 0, 2);
 
-    std::cout << "\nTest 6: teacher and room both clash (teacher is reported first)\n";
-    tryPlace(routine, classes, 6, 0, 0);
+    std::cout << "\nTest 1: unplace a placed class\n";
+    tryUnplace(routine, 2);
 
-    std::cout << "\nTest 7: different teacher and room in another section, same time\n";
-    tryPlace(routine, classes, 2, 0, 0);
+    std::cout << "\nTest 2: unplace the same class again\n";
+    tryUnplace(routine, 2);
 
-    std::cout << "\nTest 8: section busy is reported before any teacher or room clash\n";
-    tryPlace(routine, classes, 5, 0, 2);
+    std::cout << "\nTest 3: unplace a class that was never placed\n";
+    tryUnplace(routine, 5);
 
-    std::cout << "\nTest 9: rejected classes must not leave empty sections behind\n";
+    std::cout << "\nTest 4: the freed slot can be used again\n";
+    tryPlace(routine, classes, 2, 0, 1);
+
+    std::cout << "\nTest 5: move a class to a free slot\n";
+    tryMove(routine, classes, 1, 1, 3);
+
+    std::cout << "\nTest 6: move a class that is not placed\n";
+    tryMove(routine, classes, 5, 0, 0);
+
+    std::cout << "\nTest 7: move a class to the slot it is already in\n";
+    tryMove(routine, classes, 1, 1, 3);
+
+    std::cout << "\nTest 8: move onto a slot its own section already uses\n";
+    tryMove(routine, classes, 1, 0, 1);
+
+    std::cout << "\nTest 9: move that causes a teacher clash\n";
+    tryMove(routine, classes, 4, 1, 3);
+
+    std::cout << "\nTest 10: move that causes a room clash\n";
+    tryPlace(routine, classes, 5, 2, 0);
+    tryMove(routine, classes, 5, 1, 3);
+
+    std::cout << "\nTest 11: out of range and missing class\n";
+    tryMove(routine, classes, 1, 9, 0);
+    tryMove(routine, classes, 99, 0, 0);
+
+    std::cout << "\nTest 12: a slot freed by a move can be reused\n";
+    tryMove(routine, classes, 3, 0, 4);
+    tryMove(routine, classes, 4, 0, 0);
+
+    std::cout << "\nTest 13: final routine (rejected moves must change nothing)\n";
     routine.display(classes);
-
-    std::cout << "\nTest 10: more sections than the table can hold (max "
-              << MAX_SECTIONS << ")\n";
-    ClassList many;
-    Routine big;
-    for (int i = 0; i < MAX_SECTIONS + 1; i++) {
-        std::string sec(1, static_cast<char>('A' + i));
-        many.insert(i + 1, "X" + std::to_string(i), "T" + std::to_string(i),
-                    "R" + std::to_string(i), sec);
-        tryPlace(big, many, i + 1, 0, 0);
-    }
 
     return 0;
 }

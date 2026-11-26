@@ -12,6 +12,8 @@ const char* placeResultText(PlaceResult r) {
         case PLACE_TEACHER_CLASH:    return "rejected: teacher is busy in another section at this time";
         case PLACE_ROOM_CLASH:       return "rejected: room is taken by another section at this time";
         case PLACE_NO_SECTION_SPACE: return "rejected: no room for another section";
+        case PLACE_NOT_PLACED:       return "rejected: class is not placed yet";
+        case PLACE_SAME_SLOT:        return "rejected: class is already in that slot";
     }
     return "unknown result";
 }
@@ -48,17 +50,29 @@ int Routine::addSection(const std::string& name) {
 
 // O(S * DAYS * SLOTS): scans every cell. All three sizes are small fixed
 // constants, so this is a constant amount of work in practice.
-bool Routine::isPlaced(int classId) const {
+// The out parameters are only written when the class is found.
+bool Routine::locate(int classId, int& outSection, int& outDay, int& outSlot) const {
     for (int s = 0; s < sectionCount; s++) {
         for (int d = 0; d < DAYS; d++) {
             for (int t = 0; t < SLOTS; t++) {
                 if (grid[s][d][t] == classId) {
+                    outSection = s;
+                    outDay = d;
+                    outSlot = t;
                     return true;
                 }
             }
         }
     }
     return false;
+}
+
+// Same cost as locate.
+bool Routine::isPlaced(int classId) const {
+    int s = -1;
+    int d = -1;
+    int t = -1;
+    return locate(classId, s, d, t);
 }
 
 // O(S * n): looks at the same (day, slot) cell in every section, and each
@@ -121,6 +135,55 @@ PlaceResult Routine::place(const ClassList& classes, int classId, int day, int s
         s = addSection(cls->section);
     }
     grid[s][day][slot] = classId;
+    return PLACE_OK;
+}
+
+// O(S * DAYS * SLOTS): one locate, then one write. Returns false when the
+// class is not placed. On success day and slot hold the position it left,
+// which is what the undo stack needs.
+bool Routine::unplace(int classId, int& day, int& slot) {
+    int s = -1;
+    if (!locate(classId, s, day, slot)) {
+        return false;
+    }
+    grid[s][day][slot] = EMPTY_SLOT;
+    return true;
+}
+
+// O(S * n): same cost as place. Nothing changes unless every check passes.
+// The old cell is cleared only at the very end. oldDay and oldSlot hold the
+// class's current position whenever it is placed, even if the move is rejected.
+PlaceResult Routine::move(const ClassList& classes, int classId, int newDay, int newSlot,
+                          int& oldDay, int& oldSlot) {
+    if (newDay < 0 || newDay >= DAYS || newSlot < 0 || newSlot >= SLOTS) {
+        return PLACE_BAD_POSITION;
+    }
+
+    ClassNode* cls = classes.search(classId);
+    if (cls == nullptr) {
+        return PLACE_CLASS_NOT_FOUND;
+    }
+
+    int s = -1;
+    if (!locate(classId, s, oldDay, oldSlot)) {
+        return PLACE_NOT_PLACED;
+    }
+
+    if (oldDay == newDay && oldSlot == newSlot) {
+        return PLACE_SAME_SLOT;
+    }
+
+    if (grid[s][newDay][newSlot] != EMPTY_SLOT) {
+        return PLACE_SECTION_BUSY;
+    }
+
+    PlaceResult clash = checkResourceClash(classes, cls, newDay, newSlot);
+    if (clash != PLACE_OK) {
+        return clash;
+    }
+
+    grid[s][oldDay][oldSlot] = EMPTY_SLOT;
+    grid[s][newDay][newSlot] = classId;
     return PLACE_OK;
 }
 

@@ -17,7 +17,9 @@ enum PlaceResult {
     PLACE_SECTION_BUSY,
     PLACE_TEACHER_CLASH,
     PLACE_ROOM_CLASH,
-    PLACE_NO_SECTION_SPACE
+    PLACE_NO_SECTION_SPACE,
+    PLACE_NOT_PLACED,
+    PLACE_SAME_SLOT
 };
 
 const char* placeResultText(PlaceResult r);
@@ -32,6 +34,7 @@ private:
 
     int findSection(const std::string& name) const;
     int addSection(const std::string& name);
+    bool locate(int classId, int& outSection, int& outDay, int& outSlot) const;
     PlaceResult checkResourceClash(const ClassList& classes, const ClassNode* cls,
                                    int day, int slot) const;
 
@@ -39,6 +42,9 @@ public:
     Routine();
 
     PlaceResult place(const ClassList& classes, int classId, int day, int slot);
+    bool unplace(int classId, int& day, int& slot);
+    PlaceResult move(const ClassList& classes, int classId, int newDay, int newSlot,
+                     int& oldDay, int& oldSlot);
     bool isPlaced(int classId) const;
     void display(const ClassList& classes) const;
 };
