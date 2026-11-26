@@ -37,6 +37,7 @@ private:
     bool locate(int classId, int& outSection, int& outDay, int& outSlot) const;
     PlaceResult checkResourceClash(const ClassList& classes, const ClassNode* cls,
                                    int day, int slot) const;
+    int gapsInDay(int sectionIndex, int day) const;
 
 public:
     Routine();
@@ -47,6 +48,13 @@ public:
                      int& oldDay, int& oldSlot);
     bool isPlaced(int classId) const;
     void display(const ClassList& classes) const;
+
+    // Gap = empty slot between a section's first and last class of a day.
+    // The first two return -1 for an unknown section or a day out of range.
+    int gapsForSectionDay(const std::string& section, int day) const;
+    int gapsForSection(const std::string& section) const;
+    int totalGaps() const;
+    void printGapReport() const;
 };
 
 #endif

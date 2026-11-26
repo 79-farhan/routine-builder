@@ -221,3 +221,87 @@ void Routine::display(const ClassList& classes) const {
         std::cout << "\n";
     }
 }
+
+static const char* const DAY_LABELS[DAYS] = {"Sun", "Mon", "Tue", "Wed", "Thu"};
+
+// O(SLOTS): one pass to find the first and last filled slot, one pass between
+// them to count the empty ones. A day with no class or one class has no gap.
+int Routine::gapsInDay(int sectionIndex, int day) const {
+    int first = -1;
+    int last = -1;
+    for (int t = 0; t < SLOTS; t++) {
+        if (grid[sectionIndex][day][t] != EMPTY_SLOT) {
+            if (first == -1) {
+                first = t;
+            }
+            last = t;
+        }
+    }
+    if (first == -1 || first == last) {
+        return 0;
+    }
+    int gaps = 0;
+    for (int t = first + 1; t < last; t++) {
+        if (grid[sectionIndex][day][t] == EMPTY_SLOT) {
+            gaps++;
+        }
+    }
+    return gaps;
+}
+
+// O(S + SLOTS). Returns -1 for an unknown section or a bad day.
+int Routine::gapsForSectionDay(const std::string& section, int day) const {
+    if (day < 0 || day >= DAYS) {
+        return -1;
+    }
+    int s = findSection(section);
+    if (s == -1) {
+        return -1;
+    }
+    return gapsInDay(s, day);
+}
+
+// O(S + DAYS * SLOTS). Returns -1 for an unknown section.
+int Routine::gapsForSection(const std::string& section) const {
+    int s = findSection(section);
+    if (s == -1) {
+        return -1;
+    }
+    int total = 0;
+    for (int d = 0; d < DAYS; d++) {
+        total += gapsInDay(s, d);
+    }
+    return total;
+}
+
+// O(S * DAYS * SLOTS): all sizes are small fixed constants.
+int Routine::totalGaps() const {
+    int total = 0;
+    for (int s = 0; s < sectionCount; s++) {
+        for (int d = 0; d < DAYS; d++) {
+            total += gapsInDay(s, d);
+        }
+    }
+    return total;
+}
+
+// O(S * DAYS * SLOTS). Prints gaps per day, per section and overall.
+void Routine::printGapReport() const {
+    if (sectionCount == 0) {
+        std::cout << "No classes placed, no gaps to report.\n";
+        return;
+    }
+
+    std::cout << "Gap report (empty slots between a section's first and last class of each day)\n";
+    for (int s = 0; s < sectionCount; s++) {
+        std::cout << "Section " << sectionNames[s] << ":";
+        int weekTotal = 0;
+        for (int d = 0; d < DAYS; d++) {
+            int g = gapsInDay(s, d);
+            weekTotal += g;
+            std::cout << (d == 0 ? " " : ", ") << DAY_LABELS[d] << " " << g;
+        }
+        std::cout << " | week total " << weekTotal << "\n";
+    }
+    std::cout << "All sections: " << totalGaps() << " gap slots\n";
+}
