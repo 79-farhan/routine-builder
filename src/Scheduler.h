@@ -9,8 +9,12 @@
 
 enum AddResult { ADD_OK, ADD_DUPLICATE, ADD_FULL };
 enum UndoResult { UNDO_OK, UNDO_NOTHING, UNDO_BROKEN };
+enum DeleteResult { DELETE_OK, DELETE_NOT_FOUND, DELETE_PLACED, DELETE_BROKEN };
+enum UpdateResult { UPDATE_OK, UPDATE_NOT_FOUND, UPDATE_PLACED, UPDATE_DUPLICATE };
 
 const char* addResultText(AddResult r);
+const char* deleteResultText(DeleteResult r);
+const char* updateResultText(UpdateResult r);
 
 // Owns the four structures and keeps them consistent:
 //   every class is in the list, waiting classes are also in the queue,
@@ -28,6 +32,11 @@ public:
 
     AddResult addClass(int id, const std::string& course, const std::string& teacher,
                        const std::string& room, const std::string& section);
+
+    // Only classes that are not placed can be deleted or updated.
+    DeleteResult deleteClass(int id);
+    UpdateResult updateClass(int id, const std::string& course, const std::string& teacher,
+                             const std::string& room, const std::string& section);
 
     // Tries to place the class at the front of the queue. Returns false when
     // the queue is empty. Otherwise classId is the class that was tried and

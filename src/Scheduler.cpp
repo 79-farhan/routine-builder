@@ -101,3 +101,57 @@ const ClassList& Scheduler::getClasses() const { return classes; }
 const ClassQueue& Scheduler::getQueue() const { return waiting; }
 const Routine& Scheduler::getRoutine() const { return routine; }
 const UndoStack& Scheduler::getUndo() const { return undo; }
+
+const char* deleteResultText(DeleteResult r) {
+    switch (r) {
+        case DELETE_OK:        return "deleted";
+        case DELETE_NOT_FOUND: return "rejected: class not found";
+        case DELETE_PLACED:    return "rejected: class is placed, undo it first";
+        case DELETE_BROKEN:    return "internal error";
+    }
+    return "unknown result";
+}
+
+const char* updateResultText(UpdateResult r) {
+    switch (r) {
+        case UPDATE_OK:        return "updated";
+        case UPDATE_NOT_FOUND: return "rejected: class not found";
+        case UPDATE_PLACED:    return "rejected: class is placed, undo it first";
+        case UPDATE_DUPLICATE: return "rejected: duplicate class";
+    }
+    return "unknown result";
+}
+
+// O(n): list search, queue removal and list removal are each at most one pass.
+// A placed class is refused: its id sits on the undo stack, and removing it
+// would make that undo fail. Nothing changes unless every check passes.
+DeleteResult Scheduler::deleteClass(int id) {
+    if (classes.search(id) == nullptr) {
+        return DELETE_NOT_FOUND;
+    }
+    if (routine.isPlaced(id)) {
+        return DELETE_PLACED;
+    }
+    if (!waiting.removeValue(id)) {   // safety net, should never happen
+        return DELETE_BROKEN;
+    }
+    classes.remove(id);
+    return DELETE_OK;
+}
+
+// O(n): list search plus the list's own duplicate check. A placed class is
+// refused: a new teacher or room could create a clash that nothing rechecks.
+UpdateResult Scheduler::updateClass(int id, const std::string& course,
+                                    const std::string& teacher, const std::string& room,
+                                    const std::string& section) {
+    if (classes.search(id) == nullptr) {
+        return UPDATE_NOT_FOUND;
+    }
+    if (routine.isPlaced(id)) {
+        return UPDATE_PLACED;
+    }
+    if (!classes.update(id, course, teacher, room, section)) {
+        return UPDATE_DUPLICATE;
+    }
+    return UPDATE_OK;
+}
