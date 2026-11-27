@@ -22,6 +22,7 @@ run_test() {
 run_test test_classlist src/ClassList.cpp
 run_test test_queue src/ClassQueue.cpp
 run_test test_stack src/UndoStack.cpp
+run_test test_sessions src/ClassList.cpp
 
 if [ $failed -eq 0 ]; then
     echo "ALL TEST PROGRAMS PASSED"
