@@ -12,16 +12,14 @@ ClassList::~ClassList() {
     }
 }
 
-// O(n): walks the list once. Duplicate means same id,
-// or same course already added for the same section.
-bool ClassList::isDuplicate(int id, const std::string& course,
-                            const std::string& section) const {
+// O(n): true if some class other than skip already has this course, section
+// and session. skip may be nullptr when nothing should be ignored.
+bool ClassList::sessionTaken(const ClassNode* skip, const std::string& course,
+                             const std::string& section, int session) const {
     ClassNode* cur = head;
     while (cur != nullptr) {
-        if (cur->id == id) {
-            return true;
-        }
-        if (cur->course == course && cur->section == section) {
+        if (cur != skip && cur->course == course &&
+            cur->section == section && cur->session == session) {
             return true;
         }
         cur = cur->next;
@@ -29,11 +27,22 @@ bool ClassList::isDuplicate(int id, const std::string& course,
     return false;
 }
 
-// O(n) because of the duplicate check, then O(1) to attach at the tail.
-// Returns false and changes nothing if the class is a duplicate.
+// Session 1 by default.
 bool ClassList::insert(int id, const std::string& course, const std::string& teacher,
                        const std::string& room, const std::string& section) {
-    if (isDuplicate(id, course, section)) {
+    return insert(id, course, teacher, room, section, 1);
+}
+
+// O(n) for the id search and the session check, then O(1) to attach at the
+// tail. Returns false and changes nothing if the session is below 1, the id
+// exists, or the course/section/session combination exists. Every check runs
+// before new is called, so a rejected class never leaks a node.
+bool ClassList::insert(int id, const std::string& course, const std::string& teacher,
+                       const std::string& room, const std::string& section, int session) {
+    if (session < 1) {
+        return false;
+    }
+    if (search(id) != nullptr || sessionTaken(nullptr, course, section, session)) {
         return false;
     }
 
@@ -43,6 +52,7 @@ bool ClassList::insert(int id, const std::string& course, const std::string& tea
     node->teacher = teacher;
     node->room = room;
     node->section = section;
+    node->session = session;
     node->next = nullptr;
 
     if (head == nullptr) {      // empty list: node is both head and tail
@@ -54,37 +64,6 @@ bool ClassList::insert(int id, const std::string& course, const std::string& tea
     }
     count++;
     return true;
-}
-
-// O(n): in the worst case the class is last or missing.
-// Returns nullptr when not found (also true for an empty list).
-ClassNode* ClassList::search(int id) const {
-    ClassNode* cur = head;
-    while (cur != nullptr) {
-        if (cur->id == id) {
-            return cur;
-        }
-        cur = cur->next;
-    }
-    return nullptr;
-}
-
-// O(n): visits every node once
-void ClassList::display() const {
-    if (head == nullptr) {
-        std::cout << "No classes added yet.\n";
-        return;
-    }
-    ClassNode* cur = head;
-    while (cur != nullptr) {
-        std::cout << cur->id << " | " << cur->course << " | " << cur->teacher
-                  << " | " << cur->room << " | " << cur->section << "\n";
-        cur = cur->next;
-    }
-}
-
-int ClassList::size() const {
-    return count;
 }
 
 // O(n): must walk to find the node. Unlinking and deleting is O(1).
@@ -117,34 +96,68 @@ bool ClassList::remove(int id) {
     return true;
 }
 
-// O(n): true if some OTHER class (id != skipId) already has this course in this section.
-bool ClassList::courseSectionTaken(int skipId, const std::string& course,
-                                   const std::string& section) const {
-    ClassNode* cur = head;
-    while (cur != nullptr) {
-        if (cur->id != skipId && cur->course == course && cur->section == section) {
-            return true;
-        }
-        cur = cur->next;
-    }
-    return false;
-}
-
-// O(n): search is O(n), the duplicate check is O(n), the field changes are O(1).
-// Returns false if the id is missing or the new details would duplicate another
-// class. On failure the node is left exactly as it was.
+// Keeps the class's current session.
 bool ClassList::update(int id, const std::string& course, const std::string& teacher,
                        const std::string& room, const std::string& section) {
     ClassNode* node = search(id);
     if (node == nullptr) {
         return false;
     }
-    if (courseSectionTaken(id, course, section)) {
+    return update(id, course, teacher, room, section, node->session);
+}
+
+// O(n): search is O(n), the session check is O(n), the field changes are O(1).
+// Returns false if the id is missing, the session is below 1, or the new
+// course/section/session would duplicate another class. On failure the node
+// is left exactly as it was.
+bool ClassList::update(int id, const std::string& course, const std::string& teacher,
+                       const std::string& room, const std::string& section, int session) {
+    if (session < 1) {
+        return false;
+    }
+    ClassNode* node = search(id);
+    if (node == nullptr) {
+        return false;
+    }
+    if (sessionTaken(node, course, section, session)) {
         return false;
     }
     node->course = course;
     node->teacher = teacher;
     node->room = room;
     node->section = section;
+    node->session = session;
     return true;
+}
+
+// O(n): in the worst case the class is last or missing.
+// Returns nullptr when not found (also true for an empty list).
+ClassNode* ClassList::search(int id) const {
+    ClassNode* cur = head;
+    while (cur != nullptr) {
+        if (cur->id == id) {
+            return cur;
+        }
+        cur = cur->next;
+    }
+    return nullptr;
+}
+
+// O(n): visits every node once
+void ClassList::display() const {
+    if (head == nullptr) {
+        std::cout << "No classes added yet.\n";
+        return;
+    }
+    ClassNode* cur = head;
+    while (cur != nullptr) {
+        std::cout << cur->id << " | " << cur->course << " | " << cur->teacher
+                  << " | " << cur->room << " | " << cur->section
+                  << " | session " << cur->session << "\n";
+        cur = cur->next;
+    }
+}
+
+int ClassList::size() const {
+    return count;
 }
